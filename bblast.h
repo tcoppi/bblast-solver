@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 /* In the Bubble Blast 2 game the board is 4x6, but it can really be any size. */
-#define BBSIZE_X 4
+#define BBSIZE_X 5
 #define BBSIZE_Y 6
 
 /**
@@ -33,6 +33,13 @@ typedef struct _bblast_touch bblast_touch;
  * The goal of a game of bubble blast is to make all squares have 0 life.
  * Returns an array of touches that will solve the board.
  */
-bblast_touch *bblast_solve(bblast_square **board, uint64_t max_touches);
+bblast_touch *bblast_solve(bblast_square *board[BBSIZE_X][BBSIZE_Y], uint64_t max_touches);
+
+/**
+ * Prints the board
+ */
+void print_board(bblast_square *board[BBSIZE_X][BBSIZE_Y]);
+
+void reset_board(bblast_square *board[BBSIZE_X][BBSIZE_Y]);
 
 #endif
