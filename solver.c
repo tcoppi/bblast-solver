@@ -53,9 +53,9 @@ void do_touch(bblast_square *board[BBSIZE_X][BBSIZE_Y], bblast_touch *touch) {
 	// subtract and see if the square is dead
 	if((--((board[touch->x][touch->y])->life)) == 0) {
 
-		printf("%d,%d is dead\n\n", touch->x, touch->y);
+//		printf("%d,%d is dead\n\n", touch->x, touch->y);
 
-		print_board(board);
+//		print_board(board);
 
 		//XXX FIXME the way this works in a serial way may not be
 		//correct. might need to use pthreads and parallelize it, or
@@ -63,28 +63,28 @@ void do_touch(bblast_square *board[BBSIZE_X][BBSIZE_Y], bblast_touch *touch) {
 
 		//move bubble upwards
 		for(i=(touch->y)-1;i>=0;i--) {
-			printf("checking %d, %d\n", touch->x, i);
+//			printf("checking %d, %d\n", touch->x, i);
 			if(check_and_do_touch(board, touch->x, i))
 				break;
 		}
 
 		//move bubble downwards
 		for(i=(touch->y)+1;i<BBSIZE_Y;i++) {
-			printf("checking %d, %d\n", touch->x, i);
+//			printf("checking %d, %d\n", touch->x, i);
 			if(check_and_do_touch(board, touch->x, i))
 				break;
 		}
 
 		//move bubble to the right
 		for(i=(touch->x)+1;i<BBSIZE_X;i++) {
-			printf("checking %d, %d\n", i, touch->y);
+//			printf("checking %d, %d\n", i, touch->y);
 			if(check_and_do_touch(board, i, touch->y))
 				break;
 		}
 
 		//move bubble to the left
 		for(i=(touch->x)-1;i>=0;i--) {
-			printf("checking %d, %d\n", i, touch->y);
+//			printf("checking %d, %d\n", i, touch->y);
 			if(check_and_do_touch(board, i, touch->y))
 				break;
 		}
@@ -124,10 +124,10 @@ bblast_touch *bblast_solve(bblast_square *board[BBSIZE_X][BBSIZE_Y], uint64_t ma
 
 	i = 0;
 
-//	while(1) {
+	while(1) {
 		// select new touch and add it to list, then do it
-	//	touches[i] = *select_touch();
-		touches[i] = *new_touch(2,4);
+		touches[i] = *select_touch();
+	//	touches[i] = *new_touch(2,4);
 
 		printf("trying %d,%d\n", touches[i].x, touches[i].y);
 
@@ -142,14 +142,14 @@ bblast_touch *bblast_solve(bblast_square *board[BBSIZE_X][BBSIZE_Y], uint64_t ma
 			return touches;
 		}
 		else if(++i >= max_touches) {
-			print_board(board);
+//			print_board(board);
 			i = 0;
 			reset_board(board);
 			printf("reset\n");
 		}
 
 		tries++;
-//	}
+	}
 	return NULL;
 }
 
