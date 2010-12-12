@@ -6,7 +6,52 @@
 
 extern mt_state s;
 
+bblast_touch_queue *tqueue;
+
 void do_touch(bblast_square *board[BBSIZE_X][BBSIZE_Y], bblast_touch *touch);
+
+void enqueue_touch(bblast_touch_queue *queue, bblast_touch *touch) {
+	bblast_touch_queue_elem *nem = malloc(sizeof(bblast_touch_queue_elem));
+	bblast_touch_queue_elem *tmp = queue->head;
+	bblast_touch_queue_elem *prev = NULL;
+
+	nem->touch = touch;
+	nem->next = NULL;
+
+	if(queue->head == NULL) {
+		queue->head = nem;
+		return;
+	}
+
+	while(tmp) {
+		prev = tmp;
+		tmp = tmp->next;
+	}
+
+	prev->next = nem;
+}
+
+bblast_touch *dequeue_touch(bblast_touch_queue *queue) {
+	bblast_touch_queue_elem *tmp = queue->head;
+
+	if(!queue->head) {
+		return NULL;
+	}
+
+	queue->head = queue->head->next;
+
+	return tmp->touch;
+}
+
+/**
+ * Dequeue, do_touch(), repeat until dequeue returns NULL.
+ */
+void run_queue(bblast_square *board[BBSIZE_X][BBSIZE_Y]) {
+	bblast_touch *touch = NULL;
+	while((touch = dequeue_touch(tqueue))) {
+		do_touch(board, touch);
+	}
+}
 
 bblast_touch *new_touch(uint32_t x, uint32_t y) {
 	bblast_touch *ntouch = malloc(sizeof(bblast_touch));
@@ -18,15 +63,17 @@ bblast_touch *new_touch(uint32_t x, uint32_t y) {
 }
 
 /* helper for do_touch */
-uint32_t check_and_do_touch(bblast_square *board[BBSIZE_X][BBSIZE_Y], uint32_t x, uint32_t y) {
+uint32_t check_and_enqueue(bblast_square *board[BBSIZE_X][BBSIZE_Y], uint32_t x, uint32_t y) {
 	bblast_touch *ntouch = NULL;
 
 	if(board[x][y]->life > 0) {
 		ntouch = new_touch(x, y);
 
-		do_touch(board, ntouch);
+		enqueue_touch(tqueue, ntouch);
 
-		free(ntouch);
+//		do_touch(board, ntouch);
+
+//		free(ntouch);
 
 		return 1;
 	}
@@ -42,6 +89,7 @@ uint32_t check_and_do_touch(bblast_square *board[BBSIZE_X][BBSIZE_Y], uint32_t x
  */
 void do_touch(bblast_square *board[BBSIZE_X][BBSIZE_Y], bblast_touch *touch) {
 	int i;
+	int32_t u,d,l,r;
 
 	if(board[touch->x][touch->y]->life == 0) {
 		// this shouldn't ever happen
@@ -49,6 +97,8 @@ void do_touch(bblast_square *board[BBSIZE_X][BBSIZE_Y], bblast_touch *touch) {
 		return;
 		exit(-1);
 	}
+
+	printf("touching %d,%d\n", touch->x, touch->y);
 
 	// subtract and see if the square is dead
 	if((--((board[touch->x][touch->y])->life)) == 0) {
@@ -61,33 +111,73 @@ void do_touch(bblast_square *board[BBSIZE_X][BBSIZE_Y], bblast_touch *touch) {
 		//correct. might need to use pthreads and parallelize it, or
 		//use some method of simulating it
 
+		u = (touch->y) - 1;
+		d = (touch->y) + 1;
+		r = (touch->x) + 1;
+		l = (touch->x) - 1;
+
+		while((u >= 0) && (d < BBSIZE_Y) && (r < BBSIZE_X) && (l >= 0)) {
+			//check up
+			if((u >= 0) && check_and_enqueue(board, touch->x, u)) {
+				u = -1;
+			}
+			else {
+				u--;
+			}
+
+			//check down
+			if((d < BBSIZE_Y) && check_and_enqueue(board, touch->x, d)) {
+				d = BBSIZE_Y;
+			}
+			else {
+				d++;
+			}
+
+			//check right
+			if((r < BBSIZE_X) && check_and_enqueue(board, r, touch->y)) {
+				r = BBSIZE_X;
+			}
+			else {
+				r++;
+			}
+
+			//check left
+			if((l >= 0) && check_and_enqueue(board, l, touch->y)) {
+				l = -1;
+			}
+			else {
+				l--;
+			}
+		}
+/*
 		//move bubble upwards
 		for(i=(touch->y)-1;i>=0;i--) {
 			printf("checking %d, %d\n", touch->x, i);
-			if(check_and_do_touch(board, touch->x, i))
+			if(check_and_enqueue(board, touch->x, i))
 				break;
 		}
 
 		//move bubble downwards
 		for(i=(touch->y)+1;i<BBSIZE_Y;i++) {
 			printf("checking %d, %d\n", touch->x, i);
-			if(check_and_do_touch(board, touch->x, i))
+			if(check_and_enqueue(board, touch->x, i))
 				break;
 		}
 
 		//move bubble to the right
 		for(i=(touch->x)+1;i<BBSIZE_X;i++) {
 			printf("checking %d, %d\n", i, touch->y);
-			if(check_and_do_touch(board, i, touch->y))
+			if(check_and_enqueue(board, i, touch->y))
 				break;
 		}
 
 		//move bubble to the left
 		for(i=(touch->x)-1;i>=0;i--) {
 			printf("checking %d, %d\n", i, touch->y);
-			if(check_and_do_touch(board, i, touch->y))
+			if(check_and_enqueue(board, i, touch->y))
 				break;
 		}
+		*/
 	}
 
 }
@@ -122,6 +212,8 @@ bblast_touch *bblast_solve(bblast_square *board[BBSIZE_X][BBSIZE_Y], uint64_t ma
 	uint32_t x, y;
 	uint64_t i, tries;
 
+	tqueue = malloc(sizeof(bblast_touch_queue));
+
 	i = 0;
 
 //	while(1) {
@@ -131,7 +223,11 @@ bblast_touch *bblast_solve(bblast_square *board[BBSIZE_X][BBSIZE_Y], uint64_t ma
 
 		printf("trying %d,%d\n", touches[i].x, touches[i].y);
 
-		do_touch(board, &touches[i]);
+//		do_touch(board, &touches[i]);
+
+		enqueue_touch(tqueue, &touches[i]);
+
+		run_queue(board);
 
 		// check if board is dead
 		if(check_if_dead(board) == 1) {
