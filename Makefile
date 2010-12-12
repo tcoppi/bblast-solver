@@ -1,5 +1,5 @@
 CFLAGS=-g
-LDFLAGS=
+LDFLAGS= -pthread
 
 solver: main.o solver.o mtwist.o
 	gcc $(CFLAGS) $(LDFLAGS) main.o solver.o mtwist.o -o solver

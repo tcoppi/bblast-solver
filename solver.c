@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <pthread.h>
 
 #include "bblast.h"
 #include "mtwist.h"
@@ -9,6 +10,14 @@ extern mt_state s;
 bblast_touch_queue *tqueue;
 
 void do_touch(bblast_square *board[BBSIZE_X][BBSIZE_Y], bblast_touch *touch);
+
+struct _do_touch_args {
+	//bblast_square *board[BBSIZE_X][BBSIZE_Y];
+	bblast_square ***board;
+	bblast_touch *touch;
+};
+
+typedef struct _do_touch_args do_touch_args;
 
 void enqueue_touch(bblast_touch_queue *queue, bblast_touch *touch) {
 	bblast_touch_queue_elem *nem = malloc(sizeof(bblast_touch_queue_elem));
@@ -43,13 +52,32 @@ bblast_touch *dequeue_touch(bblast_touch_queue *queue) {
 	return tmp->touch;
 }
 
+void *helper(void *p) {
+	do_touch_args *args = (do_touch_args *)p;
+
+	do_touch(args->board, args->touch);
+
+	free(args);
+}
+
 /**
  * Dequeue, do_touch(), repeat until dequeue returns NULL.
  */
 void run_queue(bblast_square *board[BBSIZE_X][BBSIZE_Y]) {
 	bblast_touch *touch = NULL;
+	pthread_t thr;
+	do_touch_args *args;
+
 	while((touch = dequeue_touch(tqueue))) {
-		do_touch(board, touch);
+		args = malloc(sizeof(do_touch_args));
+		args->board = board;
+		args->touch = touch;
+
+		pthread_create(&thr,0,helper,(void *)args);
+
+	printf("%d\n", pthread_join(thr, NULL));
+
+		//do_touch(board, touch);
 	}
 }
 
